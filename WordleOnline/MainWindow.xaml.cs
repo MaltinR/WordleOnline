@@ -46,7 +46,7 @@ namespace WordleOnline
 
                 canvas.Children.Add(text);
                 window.Content = canvas;
-                //window.Show();
+                window.Show();
 
                 log = this;
             }
@@ -73,10 +73,8 @@ namespace WordleOnline
 
         public class Network
         {
-            public virtual bool CheckWord(char[] input, out Slot.Status[] statuses)
+            public virtual void CheckWord(string input)
             {
-                statuses = new Slot.Status[5];
-                return false;
             }
 
             public virtual string GetAnswer()
@@ -123,23 +121,54 @@ namespace WordleOnline
                 }
                 return outStr;
             }
-            public override bool CheckWord(char[] input, out Slot.Status[] statuses)
+            public override void CheckWord(string input)
             {
-                Slot.Status[] _statuses = new Slot.Status[5];
+                Slot.Status[] _outStatuses;
+
+                bool isValid;
+                bool isFinished = mainWindow.CheckWord(input, out isValid, out _outStatuses);
+
+                mainWindow.CheckReply(isFinished, isValid, _outStatuses);
+
+
+                //statuses = _statuses;
+
+                //return match;
+            }
+        }
+
+        public void GetInvalid()
+        {
+            Notification("Invalid word", "#FF0000");
+        }
+
+        //Deep calculation (Host or Local exclusive)
+        public bool CheckWord(string input, out bool isValid, out Slot.Status[] statuses)
+        {
+            //statuses = new Slot.Status[5];
+            isValid = mainWindow.dictionary.Contains(input.ToLower());
+            if (isValid)
+            {
+                //Check
+                //Slot.Status[] outStatuses = new Slot.Status[5];
+
+                //isFinished = network.CheckWord(currentWord, out outStatuses);
+
+                statuses = new Slot.Status[5];
 
                 bool match = true;
-                for(int i = 0;i < 5;i++)
+                for (int i = 0; i < 5; i++)
                 {
-                    match = match && input[i] == goalWord[i];
-                    if(input[i] == goalWord[i])
+                    match = match && input[i] == (network as Network_LocalAndHost).goalWord[i];
+                    if (input[i] == (network as Network_LocalAndHost).goalWord[i])
                     {
-                        _statuses[i] = Slot.Status.Exact;
+                        statuses[i] = Slot.Status.Exact;
                     }
                     else
                     {
-                        if(charCount[input[i] - 'a'] == 0)
+                        if ((network as Network_LocalAndHost).charCount[input[i] - 'a'] == 0)
                         {
-                            _statuses[i] = Slot.Status.Wrong;
+                            statuses[i] = Slot.Status.Wrong;
                         }
                         //!= 0 -> >0
                         else
@@ -150,62 +179,123 @@ namespace WordleOnline
                             int rightCount = 0;
                             //int rightCount = 0;
 
-                            for(int j = i -1;j >= 0;j--)
+                            for (int j = i - 1; j >= 0; j--)
                             {
                                 if (input[j] == input[i])
                                 {
                                     leftCount++;
-                                    if (goalWord[j] == input[j])
+                                    if ((network as Network_LocalAndHost).goalWord[j] == input[j])
                                         leftCorrectCount++;
                                 }
                             }
-                            for(int j = i + i;j < 5;j++)
+                            for (int j = i + i; j < 5; j++)
                             {
-                                if (input[j] == input[i] && goalWord[j] == input[j])
+                                if (input[j] == input[i] && (network as Network_LocalAndHost).goalWord[j] == input[j])
                                     rightCount++;
                             }
 
                             //
-                            if (leftCorrectCount + rightCount == charCount[input[i] - 'a'])
+                            if (leftCorrectCount + rightCount == (network as Network_LocalAndHost).charCount[input[i] - 'a'])
                             {
-                                _statuses[i] = Slot.Status.Wrong;
+                                statuses[i] = Slot.Status.Wrong;
                             }
                             else
                             {
                                 //
-                                if (leftCount + rightCount == charCount[input[i] - 'a'])
+                                if (leftCount + rightCount == (network as Network_LocalAndHost).charCount[input[i] - 'a'])
                                 {
-                                    _statuses[i] = Slot.Status.Wrong;
+                                    statuses[i] = Slot.Status.Wrong;
                                 }
                                 //
                                 else
                                 {
-                                    _statuses[i] = Slot.Status.Position;
+                                    statuses[i] = Slot.Status.Position;
                                 }
                             }
                         }
 
                     }
                 }
-
-                statuses = _statuses;
-
                 return match;
             }
-        }
-        public class Network_Local : Network_LocalAndHost
-        {
-            public Network_Local() : base()
+            else
             {
+                //isValid = false;
+                statuses = null;
+                return false;
             }
         }
-        public class Network_Host : Network_LocalAndHost
-        {
 
-        }
         public class Network_Client : Network
         {
+            public Network_Client()
+            {
 
+            }
+
+            public override string GetAnswer()
+            {
+                return "TODO";
+                //TODO Ask Server
+            }
+
+            public override void CheckWord(string input)
+            {
+                mainWindow.client.Check(input);
+
+                /*
+                //if (dictionary.Contains(currentWord.ToString()))
+                //if (dictionary.Contains(currentWord.ToString().ToLower()))
+                if (dictionary.Contains(input.ToLower()))
+                {
+                    //Check
+                    Slot.Status[] outStatuses;
+
+                    isFinished = network.CheckWord(currentWord, out outStatuses);
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        slots[i][currentTry].SetStatus(outStatuses[i]);
+
+                        switch (keyboard.keys[currentWord[i] - 'a'].status)
+                        {
+                            case Slot.Status.Exact:
+                                break;
+                            case Slot.Status.Pending:
+                                keyboard.keys[currentWord[i] - 'a'].Set(outStatuses[i]);
+                                break;
+                            case Slot.Status.Position:
+                                if (outStatuses[i] == Slot.Status.Exact)
+                                    keyboard.keys[currentWord[i] - 'a'].Set(outStatuses[i]);
+                                break;
+                            case Slot.Status.Wrong:
+                                break;
+                        }
+
+                    }
+                    currentTry++;
+                    currentIndex = 0;
+
+                    statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                    if (currentTry > 5 && !isFinished)
+                    {
+                        statusText.Text = "The anwser is " + network.GetAnswer().ToUpper();
+                    }
+                    else
+                    {
+                        statusText.Text = "Status: Local";
+                    }
+                }
+                else
+                {
+                    statusText.Text = "Invalid word";
+                    statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF0000"));
+                }
+                //statuses = new Slot.Status[5];
+                //return false;
+                //TODO Ask Server
+                */
+            }
         }
         //Each slot
         public class Slot
@@ -222,6 +312,7 @@ namespace WordleOnline
             public TextBlock text;
             //Background
             public Border background;
+            public Status status;
 
             public Slot()
             {
@@ -235,6 +326,8 @@ namespace WordleOnline
                 text.FontWeight = FontWeights.Bold;
                 text.HorizontalAlignment = HorizontalAlignment.Center;
                 text.VerticalAlignment = VerticalAlignment.Center;
+
+                status = Status.Pending;
             }
 
             public void Reset()
@@ -246,31 +339,43 @@ namespace WordleOnline
                 text.Text = "";
             }
 
+            public void SetBackground(int thick, string bgColor, string textColor)
+            {
+                background.Dispatcher.Invoke(() => background.BorderThickness = new Thickness(thick));
+                background.Dispatcher.Invoke(() => background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(bgColor)));
+                text.Dispatcher.Invoke(() => text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(textColor)));
+            }
+
             public void SetStatus(Status status)
             {
                 switch(status)
                 {
                     case Status.Exact:
-                        background.BorderThickness = new Thickness(0);
-                        background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#6aaa64"));
-                        text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                        SetBackground(0, "#6aaa64", "#FFFFFF");
+                        //background.BorderThickness = new Thickness(0);
+                        //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#6aaa64"));
+                        //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                         break;
                     case Status.Pending:
-                        background.BorderThickness = new Thickness(2);
-                        background.BorderBrush = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#d3d6da"));
-                        text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                        SetBackground(2, "#d3d6da", "#000000");
+                        //background.BorderThickness = new Thickness(2);
+                        //background.BorderBrush = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#d3d6da"));
+                        //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
                         break;
                     case Status.Position:
-                        background.BorderThickness = new Thickness(0);
-                        background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#c9b458"));
-                        text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                        SetBackground(0, "#c9b458", "#FFFFFF");
+                        //background.BorderThickness = new Thickness(0);
+                        //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#c9b458"));
+                        //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                         break;
                     case Status.Wrong:
-                        background.BorderThickness = new Thickness(0);
-                        background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#787c7e"));
-                        text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                        SetBackground(0, "#787c7e", "#FFFFFF");
+                        //background.BorderThickness = new Thickness(0);
+                        //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#787c7e"));
+                        //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                         break;
                 }
+                this.status = status;
             }
         }
 
@@ -288,25 +393,35 @@ namespace WordleOnline
                     background.BorderBrush = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#d3d6da"));
                 }
 
+                public void SetBackground(int thick, string colorKey)
+                {
+                    background.Dispatcher.Invoke(() => background.BorderThickness = new Thickness(thick));
+                    background.Dispatcher.Invoke(() => background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorKey)));
+                }
+
                 public void SetStatus(MainWindow.Slot.Status status)
                 {
                     switch(status)
                     {
                         case MainWindow.Slot.Status.Exact:
-                            background.BorderThickness = new Thickness(0);
-                            background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6aaa64"));
+                            //background.BorderThickness = new Thickness(0);
+                            //background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#6aaa64"));
+                            SetBackground(0, "#6aaa64");
                             break;
                         case MainWindow.Slot.Status.Pending:
-                            background.BorderThickness = new Thickness(1);
-                            background.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d3d6da"));
+                            //background.BorderThickness = new Thickness(1);
+                            //background.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d3d6da"));
+                            SetBackground(1, "#d3d6da");
                             break;
                         case MainWindow.Slot.Status.Position:
-                            background.BorderThickness = new Thickness(0);
-                            background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#c9b458"));
+                            //background.BorderThickness = new Thickness(0);
+                            //background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#c9b458"));
+                            SetBackground(0, "#c9b458");
                             break;
                         case MainWindow.Slot.Status.Wrong:
-                            background.BorderThickness = new Thickness(0);
-                            background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#787c7e"));
+                            //background.BorderThickness = new Thickness(0);
+                            //background.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#787c7e"));
+                            SetBackground(0, "#787c7e");
                             break;
                     }
                 }
@@ -358,9 +473,13 @@ namespace WordleOnline
             //
             public void SetSlots(MainWindow.Slot.Status[][] statuses)
             {
-                for (int i = 0; i < 5; i++)
+                Console.WriteLine("statuses " + statuses.Length);
+                //for (int i = 0; i < 5; i++)
+                for (int i = 0; i < statuses.Length; i++)
                 {
-                    for (int j = 0; j < 6; j++)
+                    Console.WriteLine("statuses[" + i + "] " + statuses[i].Length);
+                    //for (int j = 0; j < 6; j++)
+                    for (int j = 0; j < statuses[i].Length; j++)
                     {
                         slots[i][j].SetStatus(statuses[i][j]);
                     }
@@ -394,25 +513,36 @@ namespace WordleOnline
                     status = Slot.Status.Pending;
                 }
 
+                void SetKey(string bgColor, string textColor)
+                {
+                    background.Dispatcher.Invoke(() => background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(bgColor)));
+                    //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(textColor));
+                    text.Dispatcher.Invoke(() => text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(textColor)));
+                }
+
                 public void Set(Slot.Status _status)
                 {
                     switch(_status)
                     {
                         case Slot.Status.Exact:
-                            background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#6aaa64"));
-                            text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                            SetKey("#6aaa64", "#FFFFFF");
+                            //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#6aaa64"));
+                            //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                             break;
                         case Slot.Status.Pending:
-                            background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#d3d6da"));
-                            text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                            SetKey("#d3d6da", "#000000");
+                            //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#d3d6da"));
+                            //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
                             break;
                         case Slot.Status.Position:
-                            background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#c9b458"));
-                            text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                            SetKey("#c9b458", "#FFFFFF");
+                            //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#c9b458"));
+                            //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                             break;
                         case Slot.Status.Wrong:
-                            background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#787c7e"));
-                            text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+                            SetKey("#787c7e", "#FFFFFF");
+                            //background.Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#787c7e"));
+                            //text.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
                             break;
                     }
                     status = _status;
@@ -579,7 +709,7 @@ namespace WordleOnline
             mainWindow = this;
 
             networkType = NetworkType.Local;
-            network = new Network_Local();
+            network = new Network_LocalAndHost();
             Grid guessGrid = new Grid();
             rand = new Random();
 
@@ -626,7 +756,7 @@ namespace WordleOnline
                 canvas.Children.Add(previewSlots[i].name);
 
                 OnlineGrid.Children.Add(canvas);
-                canvas.Visibility = (Visibility)rand.Next(0, 2);
+                //canvas.Visibility = (Visibility)rand.Next(0, 2);
 
                 //Test
                 Slot.Status[][] _statuses = new Slot.Status[5][];
@@ -713,6 +843,56 @@ namespace WordleOnline
 
         }
 
+        public void CheckReply(bool _isFinished, bool isValid, Slot.Status[] statuses)
+        {
+            if (isValid)
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    //if(statuses[i] == Slot.Status.Exact);
+                    //DEBUG Statuses is null
+                    slots[i][mainWindow.currentTry].SetStatus(statuses[i]);
+
+                    switch (keyboard.keys[currentWord[i] - 'a'].status)
+                    {
+                        case Slot.Status.Exact:
+                            break;
+                        case Slot.Status.Pending:
+                            keyboard.keys[currentWord[i] - 'a'].Set(statuses[i]);
+                            break;
+                        case Slot.Status.Position:
+                            if (statuses[i] == Slot.Status.Exact)
+                                mainWindow.keyboard.keys[mainWindow.currentWord[i] - 'a'].Set(statuses[i]);
+                            break;
+                        case Slot.Status.Wrong:
+                            break;
+                    }
+
+                }
+                currentTry++;
+                currentIndex = 0;
+
+                //statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                if (currentTry > 5 && !isFinished)
+                {
+                    //statusText.Text = "The anwser is " + network.GetAnswer().ToUpper();
+                    Notification("The anwser is " + network.GetAnswer().ToUpper(), "#000000");
+                }
+                else
+                {
+                    Notification("Status: Local", "#000000");
+                    //statusText.Text = "Status: Local";
+                }
+            }
+            else
+            {
+                Notification("Invalid word", "#FF0000");
+            }
+
+            isFinished = _isFinished;
+            //TODO Split the Anwser asking
+        }
+
         private void KeyboardDown(object sender, KeyEventArgs e)
         {
             if (!isFinished)
@@ -741,53 +921,8 @@ namespace WordleOnline
                             input += currentWord[i];
                         }
 
-                        //if (dictionary.Contains(currentWord.ToString()))
-                        //if (dictionary.Contains(currentWord.ToString().ToLower()))
-                        if (dictionary.Contains(input.ToLower()))
-                        {
-                            //Check
-                            Slot.Status[] outStatuses;
-
-                            isFinished = network.CheckWord(currentWord, out outStatuses);
-
-                            for (int i = 0; i < 5; i++)
-                            {
-                                slots[i][currentTry].SetStatus(outStatuses[i]);
-
-                                switch (keyboard.keys[currentWord[i] - 'a'].status)
-                                {
-                                    case Slot.Status.Exact:
-                                        break;
-                                    case Slot.Status.Pending:
-                                        keyboard.keys[currentWord[i] - 'a'].Set(outStatuses[i]);
-                                        break;
-                                    case Slot.Status.Position:
-                                        if (outStatuses[i] == Slot.Status.Exact)
-                                            keyboard.keys[currentWord[i] - 'a'].Set(outStatuses[i]);
-                                        break;
-                                    case Slot.Status.Wrong:
-                                        break;
-                                }
-
-                            }
-                            currentTry++;
-                            currentIndex = 0;
-
-                            statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
-                            if (currentTry > 5 && !isFinished)
-                            {
-                                statusText.Text = "The anwser is " + network.GetAnswer().ToUpper();
-                            }
-                            else
-                            {
-                                statusText.Text = "Status: Local";
-                            }
-                        }
-                        else
-                        {
-                            statusText.Text = "Invalid word";
-                            statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF0000"));
-                        }
+                        //isFinished = network.CheckWord(input.ToLower());
+                        network.CheckWord(input.ToLower());
                     }
                 }
                 else if (e.Key == Key.Back)
@@ -836,8 +971,11 @@ namespace WordleOnline
 
         public void Notification(string str, string colorCode)
         {
-            statusText.Text = str;
-            statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(colorCode));
+            //statusText.Text = str;
+            //statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(colorCode));
+
+            statusText.Dispatcher.Invoke(() => statusText.Text = str);
+            statusText.Dispatcher.Invoke(() => statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(colorCode)));
         }
 
         private void Host_OnClick(object sender, RoutedEventArgs e)
@@ -869,7 +1007,6 @@ namespace WordleOnline
                 if (client == null)
                 {
                     client = new Connection_Client();
-                    networkType = NetworkType.Client;
 
                     client.Connect();
                 }
@@ -891,6 +1028,102 @@ namespace WordleOnline
             networkType = NetworkType.Local;
         }
 
+        public Slot.Status[][] GetStatuses()
+        {
+            Slot.Status[][] statuses = new Slot.Status[5][];
+
+            for (int i = 0; i < 5; i++)
+            {
+                statuses[i] = new Slot.Status[6];
+
+                for(int j = 0;j < 6;j++)
+                {
+                    statuses[i][j] = slots[i][j].status;
+                }
+            }
+
+            return statuses;
+        }
+
+        public void SetNetwork(NetworkType _network)
+        {
+            networkType = _network;
+
+            if (_network == NetworkType.Client)
+            {
+                network = new Network_Client();
+            }
+        }
+
+        
+        public void Update(Slot.Status[][][] statuses)
+        {
+            int id = 0;
+            if (networkType == NetworkType.Client)
+            {
+                //Get id
+                id = client.GetId();
+            }
+            //You are server, means your id = 0
+            for (int i = 0; i < statuses.Length; i++)
+            {
+                if (i < id)
+                {
+                    previewSlots[i].SetSlots(statuses[i]);
+                }
+                else if(i == id)
+                {
+                    //Get the last from bottom
+                    //And update
+                    for(int j = 5;j >= 0;j--)
+                    {
+                        if(statuses[i][0][j] != Slot.Status.Pending)
+                        {
+                            //Check if this line is equal to currentTry
+                            //TODO Change Keyboard
+                            if (currentTry == j)
+                            {
+                                bool isFinished = false;
+                                if (j == 5)
+                                {
+                                    isFinished = true;
+                                    for (int k = 0;k < 5;k++)
+                                    {
+                                        isFinished = isFinished && statuses[i][k][j] == Slot.Status.Exact;
+                                    }
+                                }
+
+
+                                Slot.Status[] outStatuses = new Slot.Status[5];
+                                for(int k =0;k < 5;k++)
+                                {
+                                    outStatuses[k] = statuses[i][k][j];
+                                }
+
+                                //CheckReply(isFinished, true, statuses[i][j]);
+                                CheckReply(isFinished, true, outStatuses);
+
+                                //currentTry++;
+                                //currentIndex = 0;
+                                //Change
+                            }
+                            else
+                            {
+                                //Wrong
+                                Notification("Invalid word", "#FF0000");
+                            }
+                            break;
+                        }
+                    }
+                }
+                //i > id
+                else
+                {
+                    previewSlots[i - 1].SetSlots(statuses[i]);
+                }
+            }
+        }
+
         private void Disconnect_OnClick(object sender, RoutedEventArgs e)
         {
             //Not connected
@@ -901,10 +1134,12 @@ namespace WordleOnline
                     break;
                 case NetworkType.Client:
                     client.Disconnect();
+                    network = new Network_LocalAndHost();
                     //client.Send(IPAddress.Text);
                     break;
                 case NetworkType.Host:
                     server.Disconnect();
+                    network = new Network_LocalAndHost();
                     //server.Send(IPAddress.Text);
                     break;
             }
