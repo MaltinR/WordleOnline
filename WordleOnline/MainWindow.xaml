@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WordleOnline"
         mc:Ignorable="d"
-        Title="SnapFighters" Height="450" Width="800" Loaded="WindowLoaded" KeyDown="KeyboardDown" IsTabStop="False" ResizeMode="CanMinimize" Closed="Window_Closed">
+        Title="Wordle Online by MartinL" Height="450" Width="800" Loaded="WindowLoaded" KeyDown="KeyboardDown" IsTabStop="False" ResizeMode="CanMinimize" Closed="Window_Closed" Icon="Icon.png">
 	<Canvas x:Name="mainCanvas" Focusable="True">
 		<Canvas x:Name="InputCanvas" VerticalAlignment="Bottom" HorizontalAlignment="Right" Canvas.Left="335" Width="449" Height="50" Canvas.Top="369">
 			<Button x:Name="Connect" Content="Connect" Grid.Column="4" Height="20" Grid.Row="5" Width="75" VerticalAlignment="Bottom" HorizontalAlignment="Right" Canvas.Left="370" Canvas.Top="0" Focusable="False" Click="Connect_OnClick"/>

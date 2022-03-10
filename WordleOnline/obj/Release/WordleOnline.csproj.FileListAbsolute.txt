@@ -1,0 +1,15 @@
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\bin\Release\WordleOnline.exe.config
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\bin\Release\WordleOnline.exe
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\bin\Release\WordleOnline.pdb
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.csprojAssemblyReference.cache
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\MainWindow.g.cs
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\App.g.cs
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline_MarkupCompile.cache
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline_MarkupCompile.lref
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\MainWindow.baml
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.g.resources
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.Properties.Resources.resources
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.csproj.GenerateResource.cache
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.csproj.CoreCompileInputs.cache
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.exe
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Release\WordleOnline.pdb

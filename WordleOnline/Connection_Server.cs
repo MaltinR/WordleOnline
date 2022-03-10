@@ -16,6 +16,7 @@ namespace WordleOnline
 {
     public class Connection_Server
     {
+        string name;
         bool isConnecting;
         public static Connection_Server connection;
         public List<TcpClient> tcpClients;
@@ -40,8 +41,20 @@ namespace WordleOnline
             Thread thread;
             public BinaryReader br;
             public BinaryWriter bw;
+            public string name;
             TcpClient client;
             public MainWindow.Slot.Status[][] statuses;
+
+            public void ResetStatuses()
+            {
+                for(int i = 0; i < statuses.Length;i++)
+                {
+                    for(int j = 0;j < statuses[i].Length;j++)
+                    {
+                        statuses[i][j] = MainWindow.Slot.Status.Pending;
+                    }
+                }
+            }
 
             public ClientThread(TcpClient c, int _id)
             {
@@ -70,6 +83,50 @@ namespace WordleOnline
                 client = null;
             }
 
+            public void Update()
+            {
+                MainWindow.Slot.Status[][][] statuses = new MainWindow.Slot.Status[connection.clientThreads.Count() + 1][][];
+
+                //MainWindow.Slot.Status[][] _statuse
+
+                statuses[0] = MainWindow.mainWindow.GetStatuses();
+
+                for (int i = 0; i < connection.clientThreads.Count(); i++)
+                {
+                    statuses[i + 1] = connection.clientThreads[i].statuses;
+                }
+
+                //MainWindow.mainWindow.Update(statuses);
+
+                //MainWindow.LogWindow.log.AddLog("[Server] Debug 003");
+                //TODO Send to data back (To all client, bc all players need news)
+                //3D Status Array [#Player][x][y]
+                //Pick all the data and send
+                string outStr = "";
+
+                for (int i = 0; i < statuses.Length; i++)
+                {
+                    for (int j = 0; j < statuses[i].Length; j++)
+                    {
+                        for (int k = 0; k < statuses[i][j].Length; k++)
+                        {
+                            outStr += ((int)statuses[i][j][k]).ToString();
+                        }
+                    }
+                    outStr += ",";
+                }
+
+                MainWindow.LogWindow.log.AddLog("[Server]Updated");
+
+                foreach (TcpClient client in connection.tcpClients)
+                {
+                    //NetworkStream clientStream = tcpClient.GetStream();
+                    NetworkStream _clientStream = client.GetStream();
+                    bw = new BinaryWriter(_clientStream);
+                    bw.Write("UPD" + outStr);
+                }
+            }
+
             public void Check(string receive)
             {
                 int id = receive[receive.Length - 1] - '0';
@@ -82,14 +139,6 @@ namespace WordleOnline
                 MainWindow.mainWindow.CheckWord(receive, out isValid, out _statuses);
                 //TODO Save to correspond client's data
                 //Find 
-                MainWindow.LogWindow.log.AddLog("[Server] Debug:" + id);
-
-                string str = "";
-                for(int i = 0;i<5;i++)
-                {
-                    str += _statuses[i];
-                }
-                MainWindow.LogWindow.log.AddLog("[Server] Debug Out:" + str);
 
                 if (isValid)
                 {
@@ -122,21 +171,6 @@ namespace WordleOnline
                     }
 
                     MainWindow.mainWindow.Update(statuses);
-
-                    /*
-                    MainWindow.LogWindow.log.AddLog("[Server] statuses " + statuses.Length);
-                    Console.WriteLine("statuses " + statuses.Length);
-                    for (int k = 0; k < statuses.Length; k++)
-                    {
-                        MainWindow.LogWindow.log.AddLog("[Server] statuses[" + k + "] " + statuses[k].Length);
-                        Console.WriteLine("statuses[" + k + "] " + statuses[k].Length);
-                        for (int i = 0; i < statuses[k].Length; i++)
-                        {
-                            MainWindow.LogWindow.log.AddLog("[Server] statuses[" + k + "][" + i + "] " + statuses[k][i].Length);
-                            Console.WriteLine("statuses[" + k + "][" + i + "] " + statuses[k][i].Length);
-                        }
-                    }
-                    */
 
                     MainWindow.LogWindow.log.AddLog("[Server] Debug 003");
                     //TODO Send to data back (To all client, bc all players need news)
@@ -197,6 +231,21 @@ namespace WordleOnline
                             MainWindow.LogWindow.log.AddLog("[Server]One Client Quit");
                             //Remove from clients
                             connection.RemoveClient(client, this);
+                            Thread thread = new Thread(() => MainWindow.mainWindow.ClientDisconnect(receive[3] - '0'));
+                            thread.Start();
+
+                            MainWindow.LogWindow.log.AddLog("[Server]One Client Quit Flag01");
+                            //Clients
+                            foreach (TcpClient client in connection.tcpClients)
+                            {
+                                if (client != this.client)
+                                {
+                                    clientStream = client.GetStream();
+                                    bw = new BinaryWriter(clientStream);
+                                    bw.Write("CDC" + receive[3]);
+                                }
+                            }
+
                             return;
                         }
                         else if (cmd == "CHK")
@@ -205,6 +254,35 @@ namespace WordleOnline
                             checkThread.Start();
 
                         }
+                        else if(cmd == "NEW")
+                        {
+                            name = receive.Substring(3);
+
+                            //Local
+                            MainWindow.mainWindow.NewPlayer(id, name);
+
+                            //Clients
+                            foreach (TcpClient client in connection.tcpClients)
+                            {
+                                if (client == this.client)
+                                {
+                                    Thread thread = new Thread(NewComer);
+                                    thread.Start();
+                                }
+                                else
+                                {
+                                    clientStream = client.GetStream();
+                                    bw = new BinaryWriter(clientStream);
+                                    bw.Write("NEW" + id + name);
+                                }
+                            }
+                        }
+                        else if(cmd == "ANS")
+                        {
+                            clientStream = client.GetStream();
+                            bw = new BinaryWriter(clientStream);
+                            bw.Write("ANS" + (MainWindow.mainWindow.network as MainWindow.Network_LocalAndHost).GetGoalWord());
+                        }
                     }
                     catch
                     {
@@ -212,6 +290,81 @@ namespace WordleOnline
                         //AddLog("Connect Failed");
                     }
                 }
+            }
+            public void NewComer()
+            {
+                MainWindow.Slot.Status[][][] statuses = new MainWindow.Slot.Status[connection.clientThreads.Count() + 1][][];
+
+                //MainWindow.Slot.Status[][] _statuse
+
+                statuses[0] = MainWindow.mainWindow.GetStatuses();
+
+                for (int i = 0; i < connection.clientThreads.Count(); i++)
+                {
+                    statuses[i + 1] = connection.clientThreads[i].statuses;
+                }
+
+                //MainWindow.mainWindow.Update(statuses);
+
+                //MainWindow.LogWindow.log.AddLog("[Server] Debug 003");
+                //TODO Send to data back (To all client, bc all players need news)
+                //3D Status Array [#Player][x][y]
+                //Pick all the data and send
+                string outStr = "";
+
+                for (int i = 0; i < statuses.Length; i++)
+                {
+                    if (i == id) continue;
+                    for (int j = 0; j < statuses[i].Length; j++)
+                    {
+                        for (int k = 0; k < statuses[i][j].Length; k++)
+                        {
+                            outStr += ((int)statuses[i][j][k]).ToString();
+                        }
+                    }
+                    outStr += ",";
+                }
+                outStr += ";";
+
+                outStr += connection.name +",";
+                for(int i = 0;i < connection.clientThreads.Count;i++)
+                {
+                    if (i+1 == id) continue;
+                    outStr += connection.clientThreads[i].name+",";
+                }
+
+                NetworkStream clientStream = client.GetStream();
+                bw = new BinaryWriter(clientStream);
+                bw.Write("EXT" + outStr);
+            }
+        }
+
+        public void ClientDisconnect(int id)
+        {
+            for(int i = 0;i < clientThreads.Count;i++)
+            {
+                if(clientThreads[i].id > id)
+                {
+                    //Move
+                    clientThreads[i].id--;
+                }
+            }
+        }
+
+        public void ServerNewGame()
+        {
+            //Clear clients record
+            for(int i = 0;i < clientThreads.Count;i++)
+            {
+                clientThreads[i].ResetStatuses();
+            }
+
+            foreach (TcpClient client in tcpClients)
+            {
+                //NetworkStream clientStream = tcpClient.GetStream();
+                NetworkStream clientStream = client.GetStream();
+                bw = new BinaryWriter(clientStream);
+                bw.Write("GAM");
             }
         }
 
@@ -234,14 +387,28 @@ namespace WordleOnline
                                                                   //AddLog("Connect Succesfully");
                     MainWindow.LogWindow.log.AddLog("[Server]Connect Succesfully");
 
-                    int id = clientThreads.Count + 1;//0 = server
+                    if (tcpClients.Count < 8)
+                    {
 
-                    clientThreads.Add(new ClientThread(tcpClients[tcpClients.Count - 1], id));
+                        int id = clientThreads.Count + 1;//0 = server
+
+                        clientThreads.Add(new ClientThread(tcpClients[tcpClients.Count - 1], id));
 
 
-                    NetworkStream _clientStream = tcpClients[tcpClients.Count - 1].GetStream();
-                    bw = new BinaryWriter(_clientStream);
-                    bw.Write("CON" + id);
+                        NetworkStream _clientStream = tcpClients[tcpClients.Count - 1].GetStream();
+                        bw = new BinaryWriter(_clientStream);
+                        bw.Write("CON" + id);
+
+                        //TODO Send Old Data
+                    }
+                    else
+                    {
+                        NetworkStream _clientStream = tcpClients[tcpClients.Count - 1].GetStream();
+                        bw = new BinaryWriter(_clientStream);
+                        bw.Write("APN");
+                        tcpClients[tcpClients.Count - 1].Close();
+                        tcpClients.RemoveAt(tcpClients.Count - 1);
+                    }
                 }
                 catch
                 {
@@ -250,12 +417,15 @@ namespace WordleOnline
             }
         }
 
-        public void Host()
+        public void Host(string _name, int port)
         {
-            IPAddress ip = IPAddress.Parse("127.0.0.1");//Server ip
+            //IPAddress ip = IPAddress.Parse("127.0.0.1");//Server ip
+            //IPAddress ip = IPAddress.Parse("127.0.0.1");//Server ip
 
-            tcpListener = new TcpListener(ip, 25565);
+            tcpListener = new TcpListener(IPAddress.Any, port);
             tcpListener.Start();//Start
+
+            name = _name;
 
             MainWindow.LogWindow.log.AddLog("[Server]Connection Started");
             //AddLog("Connection Started");
@@ -283,13 +453,17 @@ namespace WordleOnline
         //The Wordle data
         public void Update()
         {
-
+            foreach (ClientThread client in clientThreads)
+            {
+                //NetworkStream clientStream = tcpClient.GetStream();
+                client.Update();
+            }
         }
 
         public void Disconnect()
         {
             MainWindow.LogWindow.log.AddLog("[Server]Server Ended");
-            MainWindow.mainWindow.ConnectEnd();
+            MainWindow.mainWindow.ConnectEnd(MainWindow.NetworkType.Host);
             isConnecting = false;
 
             foreach (TcpClient client in tcpClients)
