@@ -46,7 +46,7 @@ namespace WordleOnline
 
                 canvas.Children.Add(text);
                 window.Content = canvas;
-                //window.Show();
+                window.Show();
 
                 log = this;
             }
@@ -246,7 +246,16 @@ namespace WordleOnline
             {
                 //return "TODO";
                 //TODO Ask Server
-                mainWindow.client.GetAnswer();
+                if(mainWindow.client != null && mainWindow.client.IsConnected())
+                {
+                    mainWindow.client.GetAnswer();
+                }
+                else
+                {
+                    mainWindow.ConnectEnd(NetworkType.Client);
+                    mainWindow.Notification("Connection lost, back to local", "#FF0000");
+                }
+
             }
 
             public override void CheckWord(string input)
@@ -673,7 +682,7 @@ namespace WordleOnline
             isFinished = false;
             isFocusingText = false;
 
-            Window.Activate();
+            //Window.Activate();
             //System.Windows.Input.Keyboard.ClearFocus();
 
             for (int i = 0; i < 5; i++)
@@ -872,7 +881,7 @@ namespace WordleOnline
                 //statusText.Foreground = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
                 if (currentTry > 5 && !_isFinished)
                 {
-                    LogWindow.log.AddLog("[Client] GetAnswer Called ");
+                    //LogWindow.log.AddLog("[Client] GetAnswer Called ");
                     network.GetAnswer();
                     //statusText.Text = "The anwser is " + network.GetAnswer().ToUpper();
                     //Notification("The anwser is " + network.GetAnswer().ToUpper(), "#000000");
@@ -918,7 +927,7 @@ namespace WordleOnline
                 }
             }
 
-            MainWindow.LogWindow.log.AddLog("[Client]ClientDisconnect " + id + " : " + own);
+            //MainWindow.LogWindow.log.AddLog("[Client]ClientDisconnect " + id + " : " + own);
             //Start from where to move
             for (int i = id;i < 7;i++)
             {
@@ -997,6 +1006,8 @@ namespace WordleOnline
 
         private void New_OnClick(object sender, RoutedEventArgs e)
         {
+            System.Windows.Input.Keyboard.Focus(mainCanvas);
+            isFocusingText = false;
             if (isConnecting) return;
             switch (networkType)
             {
@@ -1030,11 +1041,19 @@ namespace WordleOnline
 
         private void Host_OnClick(object sender, RoutedEventArgs e)
         {
+            System.Windows.Input.Keyboard.Focus(mainCanvas);
+            isFocusingText = false;
             if (isConnecting) return;
             if (client == null)
             {
                 if (server == null)
                 {
+
+                    if(Name.Text == "")
+                    {
+                        Notification("Please enter you name", "#FF0000");
+                        return;
+                    }
 
                     int port;
                     if (int.TryParse(Port.Text, out port))
@@ -1061,6 +1080,8 @@ namespace WordleOnline
             {
                 Notification("You are already on another server", "#FF0000");
             }
+
+            logWindow.AddLog("currentTry " + currentTry + " currentIndex " + currentIndex + " isFinished " + isFinished);
         }
 
         public void NewPlayer(int id, string name)
@@ -1085,12 +1106,25 @@ namespace WordleOnline
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
+            System.Windows.Input.Keyboard.Focus(mainCanvas);
+            isFocusingText = false;
             if (isConnecting) return;
 
             if (server == null)
             {
                 if (client == null)
                 {
+                    if (Name.Text == "")
+                    {
+                        Notification("Please enter you name", "#FF0000");
+                        return;
+                    }
+                    if (IPAddress.Text == "")
+                    {
+                        Notification("Please enter the IP address", "#FF0000");
+                        return;
+                    }
+
                     int port;
 
                     if (int.TryParse(Port.Text, out port))
@@ -1124,13 +1158,18 @@ namespace WordleOnline
             client = null;
             server = null;
             networkType = NetworkType.Local;
+            /*
             if (type == NetworkType.Client)
             {
-                network = new Network_LocalAndHost();
                 currentTry = 6;
                 currentIndex = 0;
-                Notification("Disconnected from server, press New to start a new game", "#FF0000");
+                //Notification("Disconnected from server, press New to start a new game", "#FF0000");
             }
+            */
+
+            network = new Network_LocalAndHost();
+            New();
+            Notification("Status: " + networkType.ToString(), "#000000");
 
             //Clear
             for (int i = 0;i < previewSlots.Length;i++)
@@ -1238,7 +1277,7 @@ namespace WordleOnline
                                     }
                                 }
 
-                                LogWindow.log.AddLog("[Client] isFinished " + isFinished);
+                                //LogWindow.log.AddLog("[Client] isFinished " + isFinished);
 
                                 Slot.Status[] outStatuses = new Slot.Status[5];
                                 for(int k =0;k < 5;k++)
@@ -1253,14 +1292,6 @@ namespace WordleOnline
                                 //currentIndex = 0;
                                 //Change
                             }
-                            /*
-                            //Have to pending
-                            else if(slots[0][j].status == Slot.Status.Pending)
-                            {
-                                //Wrong
-                                Notification("Invalid word A", "#FF0000");
-                            }
-                            */
                             break;
                         }
                     }
@@ -1278,6 +1309,8 @@ namespace WordleOnline
         {
             currentTry = 0;
             currentIndex = 0;
+            isFinished = false;
+
             for (int i = 0; i < 5; i++)
             {
                 for (int j = 0; j < 6; j++)
@@ -1291,6 +1324,8 @@ namespace WordleOnline
 
         private void Disconnect_OnClick(object sender, RoutedEventArgs e)
         {
+            System.Windows.Input.Keyboard.Focus(mainCanvas);
+            isFocusingText = false;
             if (isConnecting) return;
             //Not connected
             switch (networkType)
@@ -1300,12 +1335,12 @@ namespace WordleOnline
                     break;
                 case NetworkType.Client:
                     client.Disconnect();
-                    network = new Network_LocalAndHost();
+                    //network = new Network_LocalAndHost();
                     //client.Send(IPAddress.Text);
                     break;
                 case NetworkType.Host:
                     server.Disconnect();
-                    network = new Network_LocalAndHost();
+                    //network = new Network_LocalAndHost();
                     //server.Send(IPAddress.Text);
                     break;
             }
@@ -1323,6 +1358,43 @@ namespace WordleOnline
                 case NetworkType.Host:
                     server.Disconnect();
                     break;
+            }
+
+        }
+
+        private void NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (Name.Text == "")
+            {
+                NameLabel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                NameLabel.Visibility = Visibility.Hidden;
+            }
+        }
+
+        private void PortTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (Port.Text == "")
+            {
+                PortLabel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PortLabel.Visibility = Visibility.Hidden;
+            }
+        }
+
+        private void IPTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if(IPAddress.Text == "")
+            {
+                IPLabel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                IPLabel.Visibility = Visibility.Hidden;
             }
         }
     }

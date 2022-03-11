@@ -21,6 +21,13 @@ namespace WordleOnline
         public BinaryWriter bw;
         public int id;
 
+        public bool IsConnected()
+        {
+            if (client == null) return false;
+
+            return client.Connected;
+        }
+
         public void ReceiveMessage()
         {
             while (!end)
@@ -32,12 +39,12 @@ namespace WordleOnline
                     //string receive = null;
                     //receive = br.ReadString();//Read
                     string receive = br.ReadString();//Read int
-                    MainWindow.LogWindow.log.AddLog("[Client]Receive:" + receive);
+                    //MainWindow.LogWindow.log.AddLog("[Client]Receive:" + receive);
                     string cmd = receive.Substring(0, 3);
 
                     if (cmd == "DIS")
                     {
-                        MainWindow.LogWindow.log.AddLog("[Client]Server ended");
+                        //MainWindow.LogWindow.log.AddLog("[Client]Server ended");
                         MainWindow.mainWindow.ConnectEnd(MainWindow.NetworkType.Client);
                         //Remove from clients
                         end = true;
@@ -53,7 +60,7 @@ namespace WordleOnline
                     }
                     else if(cmd == "IVD")
                     {
-                        MainWindow.LogWindow.log.AddLog("[Client]Invalid");
+                        //MainWindow.LogWindow.log.AddLog("[Client]Invalid");
                         MainWindow.mainWindow.CheckReply(false, false, null);
                     }
                     else if(cmd == "CON")
@@ -63,14 +70,15 @@ namespace WordleOnline
                         id = receive[3] - '0';
 
                         //TODO Connect
-                        MainWindow.LogWindow.log.AddLog("[Client]Server accepted");
+                        //MainWindow.LogWindow.log.AddLog("[Client]Server accepted");
 
                         MainWindow.mainWindow.Reset();
                         MainWindow.mainWindow.SetNetwork(MainWindow.NetworkType.Client);
                     }
                     else if(cmd == "APN")
                     {
-                        MainWindow.LogWindow.log.AddLog("[Client]Server is full");
+                        MainWindow.mainWindow.Notification("Server is full", "#FF0000");
+                        //MainWindow.LogWindow.log.AddLog("[Client]Server is full");
                     }
                     else if(cmd == "NEW")
                     {
@@ -97,7 +105,7 @@ namespace WordleOnline
                     }
                     else if(cmd == "CDC")
                     {
-                        MainWindow.LogWindow.log.AddLog("[Client]One client disconnected");
+                        //MainWindow.LogWindow.log.AddLog("[Client]One client disconnected");
 
                         Thread thread = new Thread(() => MainWindow.mainWindow.ClientDisconnect(receive[3]-'0'));
                         thread.Start();
@@ -284,7 +292,7 @@ namespace WordleOnline
             bw.Write("DIS"+id);
             end = true;
             client.Close();
-            MainWindow.LogWindow.log.AddLog("[Client]Disconnect Succesfully");
+            //MainWindow.LogWindow.log.AddLog("[Client]Disconnect Succesfully");
             MainWindow.mainWindow.ConnectEnd(MainWindow.NetworkType.Client);
         }
 

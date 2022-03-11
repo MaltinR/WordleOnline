@@ -13,3 +13,4 @@ E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Debug\WordleO
 E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Debug\WordleOnline.csproj.CoreCompileInputs.cache
 E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Debug\WordleOnline.exe
 E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Debug\WordleOnline.pdb
+E:\Software\Development\WordleOnline\WordleOnline\WordleOnline\obj\Debug\App.baml

@@ -120,6 +120,7 @@ namespace WordleOnline
 
                 foreach (TcpClient client in connection.tcpClients)
                 {
+                    if (!client.Connected) continue;
                     //NetworkStream clientStream = tcpClient.GetStream();
                     NetworkStream _clientStream = client.GetStream();
                     bw = new BinaryWriter(_clientStream);
@@ -194,6 +195,7 @@ namespace WordleOnline
 
                     foreach (TcpClient client in connection.tcpClients)
                     {
+                        if (!client.Connected) continue;
                         //NetworkStream clientStream = tcpClient.GetStream();
                         NetworkStream _clientStream = client.GetStream();
                         bw = new BinaryWriter(_clientStream);
@@ -238,6 +240,7 @@ namespace WordleOnline
                             //Clients
                             foreach (TcpClient client in connection.tcpClients)
                             {
+                                if (!client.Connected) continue;
                                 if (client != this.client)
                                 {
                                     clientStream = client.GetStream();
@@ -264,6 +267,7 @@ namespace WordleOnline
                             //Clients
                             foreach (TcpClient client in connection.tcpClients)
                             {
+                                if (!client.Connected) continue;
                                 if (client == this.client)
                                 {
                                     Thread thread = new Thread(NewComer);
@@ -361,6 +365,7 @@ namespace WordleOnline
 
             foreach (TcpClient client in tcpClients)
             {
+                if (!client.Connected) continue;
                 //NetworkStream clientStream = tcpClient.GetStream();
                 NetworkStream clientStream = client.GetStream();
                 bw = new BinaryWriter(clientStream);
@@ -443,6 +448,7 @@ namespace WordleOnline
         {
             foreach (TcpClient client in tcpClients)
             {
+                if (!client.Connected) continue;
                 //NetworkStream clientStream = tcpClient.GetStream();
                 NetworkStream clientStream = client.GetStream();
                 bw = new BinaryWriter(clientStream);
@@ -468,6 +474,7 @@ namespace WordleOnline
 
             foreach (TcpClient client in tcpClients)
             {
+                if (!client.Connected) continue;
                 //NetworkStream clientStream = tcpClient.GetStream();
                 NetworkStream clientStream = client.GetStream();
                 bw = new BinaryWriter(clientStream);

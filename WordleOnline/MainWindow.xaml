@@ -13,9 +13,12 @@
 			<Button x:Name="Host" Content="Host" Grid.Column="4" Height="20" Grid.Row="5" Width="75" VerticalAlignment="Bottom" HorizontalAlignment="Right" Canvas.Left="370" Canvas.Top="-25" Focusable="False" Click="Host_OnClick"/>
 			<Button x:Name="Disconnect" Content="Disonnect" Grid.Column="4" Height="20" Grid.Row="5" Width="75" VerticalAlignment="Bottom" HorizontalAlignment="Right" Canvas.Left="0" Canvas.Top="0" Focusable="False" Click="Disconnect_OnClick"/>
 			<Button x:Name="NewGame" Content="New" Grid.Column="4" Height="20" Grid.Row="5" Width="75" VerticalAlignment="Bottom" HorizontalAlignment="Right" Canvas.Left="0" Canvas.Top="-25" Click="New_OnClick" Focusable="False"/>
-			<TextBox x:Name="Name" Height="20" Canvas.Left="80" TextWrapping="Wrap" Text="Name" Canvas.Top="0" Width="70" TextChanged="TextBox_TextChanged" GotFocus="TextBox_GotFocus"/>
-			<TextBox x:Name="IPAddress" Height="20" Canvas.Left="155" TextWrapping="Wrap" Text="IP Address" Canvas.Top="0" Width="130" TextChanged="TextBox_TextChanged" GotFocus="TextBox_GotFocus"/>
-			<TextBox x:Name="Port" Height="20" Canvas.Left="290" TextWrapping="Wrap" Text="Port" Canvas.Top="0" Width="75" TextChanged="TextBox_TextChanged" GotFocus="TextBox_GotFocus"/>
+			<Label x:Name="NameLabel" Content="Name" Height="25" Canvas.Left="80" Canvas.Top="-2" Foreground="Gray" />
+			<TextBox x:Name="Name" Height="20" Canvas.Left="80" TextWrapping="Wrap" Text="" Canvas.Top="0" Width="70" TextChanged="NameTextBox_TextChanged" GotFocus="TextBox_GotFocus" Background="{x:Null}"/>
+			<Label x:Name="IPLabel" Content="IP address" Height="25" Canvas.Left="155" Canvas.Top="-2" Foreground="Gray" />
+			<TextBox x:Name="IPAddress" Height="20" Canvas.Left="155" TextWrapping="Wrap" Text="" Canvas.Top="0" Width="130" TextChanged="IPTextBox_TextChanged" GotFocus="TextBox_GotFocus" Background="{x:Null}"/>
+			<Label x:Name="PortLabel" Content="Port" Height="25" Canvas.Left="290" Canvas.Top="-2" Foreground="Gray" Visibility="Hidden" />
+			<TextBox x:Name="Port" Height="20" Canvas.Left="290" TextWrapping="Wrap" Text="25565" Canvas.Top="0" Width="75" TextChanged="PortTextBox_TextChanged" GotFocus="TextBox_GotFocus" Background="{x:Null}"/>
 			<TextBlock x:Name="statusText" Canvas.Left="0" TextWrapping="Wrap" Text="Status: Not Connected" Foreground="Black" Canvas.Top="25" Width="440"/>
 		</Canvas>
 		<Canvas Height="240" Canvas.Left="352" Canvas.Top="0" Width="440">
