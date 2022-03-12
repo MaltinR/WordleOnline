@@ -30,6 +30,7 @@ namespace WordleOnline
             TextBlock text;
             public LogWindow()
             {
+                /*
                 window = new Window();
                 window.Width = 300;
                 window.Height = 600;
@@ -46,19 +47,23 @@ namespace WordleOnline
 
                 canvas.Children.Add(text);
                 window.Content = canvas;
-                window.Show();
+                //window.Show();
+                */
 
                 log = this;
             }
 
             public void AddLog(string str)
             {
+                return;
+
                 text.Dispatcher.Invoke(() => text.Text += str + "\n");
 
             }
 
             public void ClearLog()
             {
+                return;
                 text.Text = "";
             }
         }
